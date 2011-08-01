@@ -11,5 +11,6 @@ You can not append native blobs to a BlobBuilder.js `BlobBuilder` unless the scr
 a web worker thread, as the necessary `FileReaderSync` interface for reading native blobs
 is limited to web worker threads only.
 
+![Tracking image](//in.getclicky.com/212712ns.gif)
 
   [1]: http://www.w3.org/TR/file-writer-api/#the-blobbuilder-interface
