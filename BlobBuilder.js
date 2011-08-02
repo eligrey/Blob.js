@@ -62,9 +62,7 @@ try {
 		can_apply_typed_arrays_test.apply(0, new Uint8Array(1));
 	}
 } catch (ex) {}
-// Create URL if it doesn't exist or to fix a bug in Firefox where URL's properties are
-// reset after the page finishes loading.
-if (!realURL.createObjectURL || get_class(realURL) === "MozURLProperty") {
+if (!realURL.createObjectURL) {
 	URL = view.URL = {};
 }
 URL.createObjectURL = function(blob) {
