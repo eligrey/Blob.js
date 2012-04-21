@@ -1,6 +1,6 @@
 /* BlobBuilder.js
  * A BlobBuilder implementation.
- * 2011-07-13
+ * 2012-04-21
  * 
  * By Eli Grey, http://eligrey.com
  * License: X11/MIT
@@ -13,7 +13,7 @@
 
 /*! @source http://purl.eligrey.com/github/BlobBuilder.js/blob/master/BlobBuilder.js */
 
-var BlobBuilder = BlobBuilder || self.WebKitBlobBuilder || self.MozBlobBuilder || (function(view) {
+var BlobBuilder = BlobBuilder || self.WebKitBlobBuilder || self.MozBlobBuilder || self.MSBlobBuilder || (function(view) {
 "use strict";
 var
 	  get_class = function(object) {
