@@ -39,10 +39,10 @@ var
 		+ "NO_MODIFICATION_ALLOWED_ERR INVALID_STATE_ERR SYNTAX_ERR"
 	).split(" ")
 	, file_ex_code = file_ex_codes.length
-	, realURL = view.URL || view.webkitURL || view
-	, real_create_object_URL = realURL.createObjectURL
-	, real_revoke_object_URL = realURL.revokeObjectURL
-	, URL = realURL
+	, real_URL = view.URL || view.webkitURL || view
+	, real_create_object_URL = real_URL.createObjectURL
+	, real_revoke_object_URL = real_URL.revokeObjectURL
+	, URL = real_URL
 	, btoa = view.btoa
 	, atob = view.atob
 	, can_apply_typed_arrays = false
@@ -62,7 +62,7 @@ try {
 		can_apply_typed_arrays_test.apply(0, new Uint8Array(1));
 	}
 } catch (ex) {}
-if (!realURL.createObjectURL) {
+if (!real_URL.createObjectURL) {
 	URL = view.URL = {};
 }
 URL.createObjectURL = function(blob) {
@@ -84,13 +84,13 @@ URL.createObjectURL = function(blob) {
 		} else {
 			return data_URI_header + "," + encodeURIComponent(blob.data);
 		}
-	} else if (real_create_object_url) {
-		return real_create_object_url.call(realURL, blob);
+	} else if (real_create_object_URL) {
+		return real_create_object_URL.call(real_URL, blob);
 	}
 };
-URL.revokeObjectURL = function(object_url) {
-	if (object_url.substring(0, 5) !== "data:" && real_revoke_object_url) {
-		real_revoke_object_url.call(realURL, object_url);
+URL.revokeObjectURL = function(object_URL) {
+	if (object_URL.substring(0, 5) !== "data:" && real_revoke_object_URL) {
+		real_revoke_object_URL.call(real_URL, object_URL);
 	}
 };
 FBB_proto.append = function(data/*, endings*/) {
