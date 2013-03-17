@@ -100,7 +100,7 @@ var Blob = (function (view) {
 		FBB_proto.append = function(data/*, endings*/) {
 			var bb = this.data;
 			// decode data to a binary string
-			if (Uint8Array && data instanceof ArrayBuffer) {
+			if (Uint8Array && (data instanceof ArrayBuffer || data instanceof Uint8Array)) {
 				if (can_apply_typed_arrays) {
 					bb.push(String.fromCharCode.apply(String, new Uint8Array(data)));
 				} else {
