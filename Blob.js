@@ -14,7 +14,7 @@
 
 /*! @source http://purl.eligrey.com/github/Blob.js/blob/master/Blob.js */
 
-if (typeof Blob !== "function")
+if (typeof Blob !== "function" || typeof URL === "undefined")
 var Blob = (function (view) {
 	"use strict";
 
