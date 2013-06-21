@@ -15,7 +15,8 @@
 /*! @source http://purl.eligrey.com/github/Blob.js/blob/master/Blob.js */
 
 if (typeof Blob !== "function" || typeof URL === "undefined")
-var Blob = (function (view) {
+if (typeof Blob === "function" && typeof webkitURL !== "undefined") var URL = webkitURL;
+else var Blob = (function (view) {
 	"use strict";
 
 	var BlobBuilder = view.BlobBuilder || view.WebKitBlobBuilder || view.MozBlobBuilder || view.MSBlobBuilder || (function(view) {
