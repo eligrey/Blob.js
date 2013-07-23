@@ -15,7 +15,7 @@
 /*! @source http://purl.eligrey.com/github/Blob.js/blob/master/Blob.js */
 
 if (typeof Blob !== "function" || typeof URL === "undefined")
-if (typeof Blob === "function" && typeof webkitURL !== "undefined") var URL = webkitURL;
+if (typeof Blob === "function" && typeof webkitURL !== "undefined") self.URL = webkitURL;
 else var Blob = (function (view) {
 	"use strict";
 
