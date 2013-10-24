@@ -8,15 +8,14 @@
  *   See LICENSE.md
  */
 
-/*global self, unescape */
+/*global unescape */
 /*jslint bitwise: true, regexp: true, confusion: true, es5: true, vars: true, white: true,
   plusplus: true */
 
 /*! @source http://purl.eligrey.com/github/Blob.js/blob/master/Blob.js */
 
-if (!(typeof Blob === "function" || typeof Blob === "object") || typeof URL === "undefined")
-if ((typeof Blob === "function" || typeof Blob === "object") && typeof webkitURL !== "undefined") self.URL = webkitURL;
-else var Blob = (function (view) {
+if ((typeof Blob !== "function" && typeof Blob !== "object") || (Blob && Blob.toString() === '[object BlobConstructor]'))
+this.Blob = (function(view) {
 	"use strict";
 
 	var BlobBuilder = view.BlobBuilder || view.WebKitBlobBuilder || view.MozBlobBuilder || view.MSBlobBuilder || (function(view) {
@@ -163,4 +162,4 @@ else var Blob = (function (view) {
 		}
 		return builder.getBlob(type);
 	};
-}(self));
+}(this));
