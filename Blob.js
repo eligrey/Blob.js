@@ -157,7 +157,12 @@ this.Blob = (function(view) {
 		var builder = new BlobBuilder();
 		if (blobParts) {
 			for (var i = 0, len = blobParts.length; i < len; i++) {
-				builder.append(blobParts[i]);
+				if (Uint8Array && blobParts[i] instanceof Uint8Array) {
+					builder.append(blobParts[i].buffer);
+				}
+				else {
+					builder.append(blobParts[i]);
+				}
 			}
 		}
 		return builder.getBlob(type);
