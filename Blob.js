@@ -152,7 +152,7 @@ this.Blob = (function(view) {
 		return FakeBlobBuilder;
 	}(view));
 
-	return function Blob(blobParts, options) {
+	var Blob = function(blobParts, options) {
 		var type = options ? (options.type || "") : "";
 		var builder = new BlobBuilder();
 		if (blobParts) {
@@ -165,6 +165,15 @@ this.Blob = (function(view) {
 				}
 			}
 		}
-		return builder.getBlob(type);
+		var blob = builder.getBlob(type);
+		if (!blob.slice && blob.webkitSlice) {
+			blob.slice = blob.webkitSlice;
+		}
+		return blob;
 	};
+	var getPrototypeOf = Object.getPrototypeOf || function(object) {
+		return object.__proto__;
+	};
+	Blob.prototype = getPrototypeOf(new Blob());
+	return Blob;
 }(this));
