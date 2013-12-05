@@ -1,0 +1,7 @@
+{
+    "name": "Blob",
+    "version": "1.0.0",
+    "main": "./Blob.js",
+    "dependencies": {
+    }
+}
