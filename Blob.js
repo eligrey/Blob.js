@@ -19,7 +19,7 @@ if ((typeof Blob === "function" || typeof Blob === "object") && typeof webkitURL
 else var Blob = (function (view) {
 	"use strict";
 
-	var BlobBuilder = view.BlobBuilder || view.WebKitBlobBuilder || view.MozBlobBuilder || view.MSBlobBuilder || (function(view) {
+	view['BlobBuilder'] = view.BlobBuilder || view.WebKitBlobBuilder || view['MozBlobBuilder'] || view['MSBlobBuilder'] || (function(view) {
 		var
 			  get_class = function(object) {
 				return Object.prototype.toString.call(object).match(/^\[object\s(.*)\]$/)[1];
@@ -35,7 +35,7 @@ else var Blob = (function (view) {
 			}
 			, FBB_proto = FakeBlobBuilder.prototype
 			, FB_proto = FakeBlob.prototype
-			, FileReaderSync = view.FileReaderSync
+			, FileReaderSync = view['FileReaderSync']
 			, FileException = function(type) {
 				this.code = this[this.name = type];
 			}
@@ -51,8 +51,8 @@ else var Blob = (function (view) {
 			, btoa = view.btoa
 			, atob = view.atob
 			
-			, ArrayBuffer = view.ArrayBuffer
-			, Uint8Array = view.Uint8Array
+			, ArrayBuffer = view['ArrayBuffer']
+			, Uint8Array = view['Uint8Array']
 		;
 		FakeBlob.fake = FB_proto.fake = true;
 		while (file_ex_code--) {
@@ -164,3 +164,6 @@ else var Blob = (function (view) {
 		return builder.getBlob(type);
 	};
 }(self));
+
+view['BlobBuilder'] = BlobBuilder;
+view['Blob'] = Blob;
