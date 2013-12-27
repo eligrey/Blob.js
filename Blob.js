@@ -163,4 +163,4 @@ else var Blob = (function (view) {
 		}
 		return builder.getBlob(type);
 	};
-}(self));
+}(typeof self !== "undefined" && self || typeof window !== "undefined" && window || this.content || this));
