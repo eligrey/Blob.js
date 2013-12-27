@@ -8,15 +8,14 @@
  *   See LICENSE.md
  */
 
-/*global self, unescape */
+/*global unescape */
 /*jslint bitwise: true, regexp: true, confusion: true, es5: true, vars: true, white: true,
   plusplus: true */
 
 /*! @source http://purl.eligrey.com/github/Blob.js/blob/master/Blob.js */
 
-if (!(typeof Blob === "function" || typeof Blob === "object") || typeof URL === "undefined")
-if ((typeof Blob === "function" || typeof Blob === "object") && typeof webkitURL !== "undefined") self.URL = webkitURL;
-else var Blob = (function (view) {
+if ((typeof Blob !== "function" && typeof Blob !== "object") || (Blob && Blob.toString() === '[object BlobConstructor]'))
+this.Blob = (function(view) {
 	"use strict";
 
 	var BlobBuilder = view.BlobBuilder || view.WebKitBlobBuilder || view.MozBlobBuilder || view.MSBlobBuilder || (function(view) {
@@ -153,14 +152,28 @@ else var Blob = (function (view) {
 		return FakeBlobBuilder;
 	}(view));
 
-	return function Blob(blobParts, options) {
+	var Blob = function(blobParts, options) {
 		var type = options ? (options.type || "") : "";
 		var builder = new BlobBuilder();
 		if (blobParts) {
 			for (var i = 0, len = blobParts.length; i < len; i++) {
-				builder.append(blobParts[i]);
+				if (Uint8Array && blobParts[i] instanceof Uint8Array) {
+					builder.append(blobParts[i].buffer);
+				}
+				else {
+					builder.append(blobParts[i]);
+				}
 			}
 		}
-		return builder.getBlob(type);
+		var blob = builder.getBlob(type);
+		if (!blob.slice && blob.webkitSlice) {
+			blob.slice = blob.webkitSlice;
+		}
+		return blob;
 	};
-}(self));
+	var getPrototypeOf = Object.getPrototypeOf || function(object) {
+		return object.__proto__;
+	};
+	Blob.prototype = getPrototypeOf(new Blob());
+	return Blob;
+}(this));
