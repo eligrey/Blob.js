@@ -15,10 +15,10 @@
 /*! @source http://purl.eligrey.com/github/Blob.js/blob/master/Blob.js */
 
 if (!(typeof Blob === "function" || typeof Blob === "object") || typeof URL === "undefined")
-if ((typeof Blob === "function" || typeof Blob === "object") && typeof webkitURL !== "undefined") self.URL = webkitURL;
-else var Blob = (function (view) {
+window.Blob = (function (view) {
 	"use strict";
 
+	view.URL = view.URL || view.webkitURL;
 	var BlobBuilder = view.BlobBuilder || view.WebKitBlobBuilder || view.MozBlobBuilder || view.MSBlobBuilder || (function(view) {
 		var
 			  get_class = function(object) {
