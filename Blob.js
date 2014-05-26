@@ -14,8 +14,7 @@
 
 /*! @source http://purl.eligrey.com/github/Blob.js/blob/master/Blob.js */
 
-if (!(typeof Blob === "function" || typeof Blob === "object") || typeof URL === "undefined")
-self.Blob = (function (view) {
+if (!(typeof Blob === "function" || typeof Blob === "object") || typeof URL === "undefined") (function (view) {
 	"use strict";
 
 	view.URL = view.URL || view.webkitURL;
@@ -153,7 +152,7 @@ self.Blob = (function (view) {
 		return FakeBlobBuilder;
 	}(view));
 
-	return function Blob(blobParts, options) {
+	view.Blob = function Blob(blobParts, options) {
 		var type = options ? (options.type || "") : "";
 		var builder = new BlobBuilder();
 		if (blobParts) {
