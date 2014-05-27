@@ -5,7 +5,7 @@
  * By Eli Grey, http://eligrey.com
  * By Devin Samarin, https://github.com/eboyjr
  * License: X11/MIT
- *   See LICENSE.md
+ *   See https://github.com/eligrey/Blob.js/blob/master/LICENSE.md
  */
 
 /*global self, unescape */
