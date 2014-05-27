@@ -1,6 +1,6 @@
 /* Blob.js
  * A Blob implementation.
- * 2013-12-27
+ * 2014-05-27
  * 
  * By Eli Grey, http://eligrey.com
  * By Devin Samarin, https://github.com/eboyjr
@@ -14,10 +14,20 @@
 
 /*! @source http://purl.eligrey.com/github/Blob.js/blob/master/Blob.js */
 
-if (!(typeof Blob === "function" || typeof Blob === "object") || typeof URL === "undefined") (function (view) {
+(function (view) {
 	"use strict";
 
 	view.URL = view.URL || view.webkitURL;
+
+	if (view.Blob && view.URL) {
+		try {
+			new Blob;
+			return;
+		} catch (e) {}
+	}
+
+	// Internally we use a BlobBuilder implementation to base Blob off of
+	// in order to support older browsers that only have BlobBuilder
 	var BlobBuilder = view.BlobBuilder || view.WebKitBlobBuilder || view.MozBlobBuilder || view.MSBlobBuilder || (function(view) {
 		var
 			  get_class = function(object) {
@@ -148,6 +158,9 @@ if (!(typeof Blob === "function" || typeof Blob === "object") || typeof URL === 
 		};
 		FB_proto.toString = function() {
 			return "[object Blob]";
+		};
+		FB_proto.close = function() {
+			this.size = this.data.length = 0;
 		};
 		return FakeBlobBuilder;
 	}(view));
