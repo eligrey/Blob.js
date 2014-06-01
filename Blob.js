@@ -1,6 +1,6 @@
 /* Blob.js
  * A Blob implementation.
- * 2014-05-27
+ * 2014-05-31
  * 
  * By Eli Grey, http://eligrey.com
  * By Devin Samarin, https://github.com/eboyjr
