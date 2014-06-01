@@ -160,7 +160,8 @@
 			return "[object Blob]";
 		};
 		FB_proto.close = function() {
-			this.size = this.data.length = 0;
+			this.size = 0;
+			delete this.data;
 		};
 		return FakeBlobBuilder;
 	}(view));
