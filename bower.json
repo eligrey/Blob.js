@@ -1,0 +1,23 @@
+{
+  "name": "Blob.js",
+  "version": "0.1.0",
+  "homepage": "https://github.com/eligrey/Blob.js",
+  "authors": [
+    "me@eligrey.com"
+  ],
+  "main": "Blob.js",
+  "description": "An HTML5 Blob implementation",
+  "keywords": [
+    "blob",
+    "html5",
+    "shim"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
