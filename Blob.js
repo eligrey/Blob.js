@@ -3,7 +3,7 @@
  * 2014-07-24
  *
  * By Eli Grey, http://eligrey.com
- * By Devin Samarin, https://github.com/eboyjr
+ * By Devin Samarin, https://github.com/dsamarin
  * License: X11/MIT
  *   See https://github.com/eligrey/Blob.js/blob/master/LICENSE.md
  */
