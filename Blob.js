@@ -158,7 +158,10 @@
 			if (!arguments.length) {
 				type = null;
 			}
-			return new FakeBlob(this.data.join(""), type, "raw");
+			var result = new FakeBlob(this.data.join(""), type, "raw");
+			if(!result.__proto__)
+				result.__proto__ = FB_proto;
+			return result;
 		};
 		FBB_proto.toString = function() {
 			return "[object BlobBuilder]";
