@@ -119,7 +119,7 @@
 		FBB_proto.append = function(data/*, endings*/) {
 			var bb = this.data;
 			// decode data to a binary string
-			if (Uint8Array && (data instanceof ArrayBuffer || data instanceof Uint8Array)) {
+			if (typeof Uint8Array != undefined && (data instanceof ArrayBuffer || data instanceof Uint8Array)) {
 				var
 					  str = ""
 					, buf = new Uint8Array(data)
@@ -189,7 +189,7 @@
 		var builder = new BlobBuilder();
 		if (blobParts) {
 			for (var i = 0, len = blobParts.length; i < len; i++) {
-				if (Uint8Array && blobParts[i] instanceof Uint8Array) {
+				if (typeof Uint8Array != undefined && blobParts[i] instanceof Uint8Array) {
 					builder.append(blobParts[i].buffer);
 				}
 				else {
