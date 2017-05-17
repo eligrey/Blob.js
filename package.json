@@ -1,0 +1,19 @@
+{
+  "name": "blob-js",
+  "version": "1.0.0",
+  "description": "Blob.js ==============",
+  "main": "Blob.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tomcashman/Blob.js.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tomcashman/Blob.js/issues"
+  },
+  "homepage": "https://github.com/tomcashman/Blob.js#readme"
+}
