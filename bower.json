@@ -1,7 +1,7 @@
 {
   "name": "blob.js",
   "main": "Blob.js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "homepage": "https://github.com/eligrey/Blob.js",
   "authors": [
     "Eli Grey <me@eligrey.com>"
