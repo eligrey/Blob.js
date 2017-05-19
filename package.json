@@ -1,0 +1,28 @@
+{
+  "name": "blob",
+  "version": "1.0.0",
+  "description": "Blob.js implements the W3C Blob interface in browsers that do not natively support it",
+  "main": "Blob.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 0",
+    "build": "node_modules/.bin/uglifyjs Blob.js --mangle --comments /@source/ > Blob.min.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eligrey/Blob.js"
+  },
+  "keywords": [
+    "filesaver",
+    "saveas",
+    "blob"
+  ],
+  "author": "Eli Grey <me@eligrey.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/eligrey/Blob.js/issues"
+  },
+  "homepage": "https://github.com/eligrey/Blob.js#readme",
+  "devDependencies": {
+    "uglify-js": "^2.6.2"
+  }
+}
