@@ -14,7 +14,7 @@
 
 /*! @source http://purl.eligrey.com/github/Blob.js/blob/master/Blob.js */
 
-(function (view) {
+var Blob = Blob || (function (view) {
 	"use strict";
 
 	view.URL = view.URL || view.webkitURL;
@@ -208,4 +208,14 @@
 		return object.__proto__;
 	};
 	view.Blob.prototype = getPrototypeOf(new view.Blob());
+	
+	return view.Blob;
 }(typeof self !== "undefined" && self || typeof window !== "undefined" && window || this.content || this));
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports.Blob = Blob;
+} else if ((typeof define !== "undefined" && define !== null) && (define.amd !== null)) {
+  define("Blob.js", function() {
+    return Blob;
+  });
+}
