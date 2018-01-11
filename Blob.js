@@ -208,4 +208,4 @@
 		return object.__proto__;
 	};
 	view.Blob.prototype = getPrototypeOf(new view.Blob());
-}(typeof self !== "undefined" && self || typeof window !== "undefined" && window || this.content || this));
+}(typeof self !== "undefined" && self || typeof window !== "undefined" && window || typeof global !== "undefined" && global || Function('return this.content')() || Function('return this')()));
