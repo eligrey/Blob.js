@@ -211,6 +211,5 @@
 }(
 	   typeof self !== "undefined" && self
 	|| typeof window !== "undefined" && window
-	|| typeof global !== "undefined" && global 
 	|| this
 ));
