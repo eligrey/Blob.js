@@ -451,6 +451,5 @@
   } else {
     FakeBlobBuilder()
   }
-  FakeBlobBuilder()
 
 })();
