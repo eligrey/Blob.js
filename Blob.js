@@ -25,6 +25,7 @@
   	return a
   }
 
+  var origBlob = global.Blob
   var createObjectURL = URL.createObjectURL
   var revokeObjectURL = URL.revokeObjectURL
   var strTag = global.Symbol && global.Symbol.toStringTag
@@ -81,7 +82,7 @@
   };
 
   function BlobConstructor(ary, options) {
-    return new Blob(mapArrayBufferViews(ary), options || {});
+    return new origBlob(mapArrayBufferViews(ary), options || {});
   };
 
   if (global.Blob) {
@@ -428,7 +429,7 @@
           blob.name = d
           blob.lastModifiedDate = t
           blob.lastModified = +t
-          blob.toString = function() {
+          blob.toString = function() {
             return '[object File]'
           }
           
