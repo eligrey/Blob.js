@@ -1,215 +1,455 @@
 /* Blob.js
- * A Blob implementation.
- * 2018-01-12
+ * A Blob, File, FileReader & URL implementation.
+ * 2018-08-09
  *
  * By Eli Grey, http://eligrey.com
- * By Devin Samarin, https://github.com/dsamarin
+ * By Jimmy Wärting, https://github.com/jimmywarting
  * License: MIT
  *   See https://github.com/eligrey/Blob.js/blob/master/LICENSE.md
  */
 
-/*global self, unescape */
-/*jslint bitwise: true, regexp: true, confusion: true, es5: true, vars: true, white: true,
-  plusplus: true */
+;(function(){
 
-/*! @source http://purl.eligrey.com/github/Blob.js/blob/master/Blob.js */
+  var global = typeof window === 'object'
+      ? window : typeof self === 'object'
+      ? self : this
 
-(function (view) {
-	"use strict";
+  var BlobBuilder = global.BlobBuilder
+    || global.WebKitBlobBuilder
+    || global.MSBlobBuilder
+    || global.MozBlobBuilder;
 
-	view.URL = view.URL || view.webkitURL;
+  global.URL = global.URL || global.webkitURL || function(href, a) {
+  	a = document.createElement('a')
+  	a.href = uri
+  	return a
+  }
 
-	if (view.Blob && view.URL) {
-		try {
-			new Blob;
-			return;
-		} catch (e) {}
-	}
+  var createObjectURL = URL.createObjectURL
+  var revokeObjectURL = URL.revokeObjectURL
+  var strTag = global.Symbol && global.Symbol.toStringTag
+  var blobSupported = false
+  var blobSupportsArrayBufferView = false
+  var arrayBufferSupported = !!global.ArrayBuffer
+  var blobBuilderSupported = BlobBuilder
+    && BlobBuilder.prototype.append
+    && BlobBuilder.prototype.getBlob;
 
-	// Internally we use a BlobBuilder implementation to base Blob off of
-	// in order to support older browsers that only have BlobBuilder
-	var BlobBuilder = view.BlobBuilder || view.WebKitBlobBuilder || view.MozBlobBuilder || (function(view) {
-		var
-			  get_class = function(object) {
-				return Object.prototype.toString.call(object).match(/^\[object\s(.*)\]$/)[1];
-			}
-			, FakeBlobBuilder = function BlobBuilder() {
-				this.data = [];
-			}
-			, FakeBlob = function Blob(data, type, encoding) {
-				this.data = data;
-				this.size = data.length;
-				this.type = type;
-				this.encoding = encoding;
-			}
-			, FBB_proto = FakeBlobBuilder.prototype
-			, FB_proto = FakeBlob.prototype
-			, FileReaderSync = view.FileReaderSync
-			, FileException = function(type) {
-				this.code = this[this.name = type];
-			}
-			, file_ex_codes = (
-				  "NOT_FOUND_ERR SECURITY_ERR ABORT_ERR NOT_READABLE_ERR ENCODING_ERR "
-				+ "NO_MODIFICATION_ALLOWED_ERR INVALID_STATE_ERR SYNTAX_ERR"
-			).split(" ")
-			, file_ex_code = file_ex_codes.length
-			, real_URL = view.URL || view.webkitURL || view
-			, real_create_object_URL = real_URL.createObjectURL
-			, real_revoke_object_URL = real_URL.revokeObjectURL
-			, URL = real_URL
-			, btoa = view.btoa
-			, atob = view.atob
+  try {
+    // Check if Blob constructor is supported
+    blobSupported = new Blob(['ä']).size === 2
 
-			, ArrayBuffer = view.ArrayBuffer
-			, Uint8Array = view.Uint8Array
+    // Check if Blob constructor supports ArrayBufferViews
+    // Fails in Safari 6, so we need to map to ArrayBuffers there.
+    blobSupportsArrayBufferView = new Blob([new Uint8Array([1,2])]).size === 2
+  } catch(e) {}
 
-			, origin = /^[\w-]+:\/*\[?[\w\.:-]+\]?(?::[0-9]+)?/
-		;
-		FakeBlob.fake = FB_proto.fake = true;
-		while (file_ex_code--) {
-			FileException.prototype[file_ex_codes[file_ex_code]] = file_ex_code + 1;
-		}
-		// Polyfill URL
-		if (!real_URL.createObjectURL) {
-			URL = view.URL = function(uri) {
-				var
-					  uri_info = document.createElementNS("http://www.w3.org/1999/xhtml", "a")
-					, uri_origin
-				;
-				uri_info.href = uri;
-				if (!("origin" in uri_info)) {
-					if (uri_info.protocol.toLowerCase() === "data:") {
-						uri_info.origin = null;
-					} else {
-						uri_origin = uri.match(origin);
-						uri_info.origin = uri_origin && uri_origin[1];
-					}
-				}
-				return uri_info;
-			};
-		}
-		URL.createObjectURL = function(blob) {
-			var
-				  type = blob.type
-				, data_URI_header
-			;
-			if (type === null) {
-				type = "application/octet-stream";
-			}
-			if (blob instanceof FakeBlob) {
-				data_URI_header = "data:" + type;
-				if (blob.encoding === "base64") {
-					return data_URI_header + ";base64," + blob.data;
-				} else if (blob.encoding === "URI") {
-					return data_URI_header + "," + decodeURIComponent(blob.data);
-				} if (btoa) {
-					return data_URI_header + ";base64," + btoa(blob.data);
-				} else {
-					return data_URI_header + "," + encodeURIComponent(blob.data);
-				}
-			} else if (real_create_object_URL) {
-				return real_create_object_URL.call(real_URL, blob);
-			}
-		};
-		URL.revokeObjectURL = function(object_URL) {
-			if (object_URL.substring(0, 5) !== "data:" && real_revoke_object_URL) {
-				real_revoke_object_URL.call(real_URL, object_URL);
-			}
-		};
-		FBB_proto.append = function(data/*, endings*/) {
-			var bb = this.data;
-			// decode data to a binary string
-			if (Uint8Array && (data instanceof ArrayBuffer || data instanceof Uint8Array)) {
-				var
-					  str = ""
-					, buf = new Uint8Array(data)
-					, i = 0
-					, buf_len = buf.length
-				;
-				for (; i < buf_len; i++) {
-					str += String.fromCharCode(buf[i]);
-				}
-				bb.push(str);
-			} else if (get_class(data) === "Blob" || get_class(data) === "File") {
-				if (FileReaderSync) {
-					var fr = new FileReaderSync;
-					bb.push(fr.readAsBinaryString(data));
-				} else {
-					// async FileReader won't work as BlobBuilder is sync
-					throw new FileException("NOT_READABLE_ERR");
-				}
-			} else if (data instanceof FakeBlob) {
-				if (data.encoding === "base64" && atob) {
-					bb.push(atob(data.data));
-				} else if (data.encoding === "URI") {
-					bb.push(decodeURIComponent(data.data));
-				} else if (data.encoding === "raw") {
-					bb.push(data.data);
-				}
-			} else {
-				if (typeof data !== "string") {
-					data += ""; // convert unsupported types to strings
-				}
-				// decode UTF-16 to binary string
-				bb.push(unescape(encodeURIComponent(data)));
-			}
-		};
-		FBB_proto.getBlob = function(type) {
-			if (!arguments.length) {
-				type = null;
-			}
-			return new FakeBlob(this.data.join(""), type, "raw");
-		};
-		FBB_proto.toString = function() {
-			return "[object BlobBuilder]";
-		};
-		FB_proto.slice = function(start, end, type) {
-			var args = arguments.length;
-			if (args < 3) {
-				type = null;
-			}
-			return new FakeBlob(
-				  this.data.slice(start, args > 1 ? end : this.data.length)
-				, type
-				, this.encoding
-			);
-		};
-		FB_proto.toString = function() {
-			return "[object Blob]";
-		};
-		FB_proto.close = function() {
-			this.size = 0;
-			delete this.data;
-		};
-		return FakeBlobBuilder;
-	}(view));
+  /**
+   * Helper function that maps ArrayBufferViews to ArrayBuffers
+   * Used by BlobBuilder constructor and old browsers that didn't
+   * support it in the Blob constructor.
+   */
+  function mapArrayBufferViews(ary) {
+    return ary.map(function(chunk) {
+      if (chunk.buffer instanceof ArrayBuffer) {
+        var buf = chunk.buffer;
 
-	view.Blob = function(blobParts, options) {
-		var type = options ? (options.type || "") : "";
-		var builder = new BlobBuilder();
-		if (blobParts) {
-			for (var i = 0, len = blobParts.length; i < len; i++) {
-				if (Uint8Array && blobParts[i] instanceof Uint8Array) {
-					builder.append(blobParts[i].buffer);
-				}
-				else {
-					builder.append(blobParts[i]);
-				}
-			}
-		}
-		var blob = builder.getBlob(type);
-		if (!blob.slice && blob.webkitSlice) {
-			blob.slice = blob.webkitSlice;
-		}
-		return blob;
-	};
+        // if this is a subarray, make a copy so we only
+        // include the subarray region from the underlying buffer
+        if (chunk.byteLength !== buf.byteLength) {
+          var copy = new Uint8Array(chunk.byteLength);
+          copy.set(new Uint8Array(buf, chunk.byteOffset, chunk.byteLength));
+          buf = copy.buffer;
+        }
 
-	var getPrototypeOf = Object.getPrototypeOf || function(object) {
-		return object.__proto__;
-	};
-	view.Blob.prototype = getPrototypeOf(new view.Blob());
-}(
-	   typeof self !== "undefined" && self
-	|| typeof window !== "undefined" && window
-	|| this
-));
+        return buf;
+      }
+
+      return chunk;
+    });
+  }
+
+  function BlobBuilderConstructor(ary, options) {
+    options = options || {};
+
+    var bb = new BlobBuilder();
+    mapArrayBufferViews(ary).forEach(function(part) {
+      bb.append(part);
+    });
+
+    return options.type ? bb.getBlob(options.type) : bb.getBlob();
+  };
+
+  function BlobConstructor(ary, options) {
+    return new Blob(mapArrayBufferViews(ary), options || {});
+  };
+
+  if (global.Blob) {
+    BlobBuilderConstructor.prototype = Blob.prototype;
+    BlobConstructor.prototype = Blob.prototype;
+  }
+
+  function FakeBlobBuilder() {
+    function toUTF8Array(str) {
+      var utf8 = [];
+      for (var i=0; i < str.length; i++) {
+        var charcode = str.charCodeAt(i);
+        if (charcode < 0x80) utf8.push(charcode);
+        else if (charcode < 0x800) {
+          utf8.push(0xc0 | (charcode >> 6), 
+          0x80 | (charcode & 0x3f));
+        }
+        else if (charcode < 0xd800 || charcode >= 0xe000) {
+          utf8.push(0xe0 | (charcode >> 12), 
+          0x80 | ((charcode>>6) & 0x3f), 
+          0x80 | (charcode & 0x3f));
+        }
+        // surrogate pair
+        else {
+          i++;
+          // UTF-16 encodes 0x10000-0x10FFFF by
+          // subtracting 0x10000 and splitting the
+          // 20 bits of 0x0-0xFFFFF into two halves
+          charcode = 0x10000 + (((charcode & 0x3ff)<<10)
+          | (str.charCodeAt(i) & 0x3ff));
+          utf8.push(0xf0 | (charcode >>18), 
+          0x80 | ((charcode>>12) & 0x3f), 
+          0x80 | ((charcode>>6) & 0x3f), 
+          0x80 | (charcode & 0x3f));
+        }
+      }
+      return utf8;
+    }
+    function fromUtf8Array(array) {
+      var out, i, len, c;
+      var char2, char3;
+      
+      out = "";
+      len = array.length;
+      i = 0;
+      while (i < len) {
+        c = array[i++];
+        switch (c >> 4)
+        { 
+          case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+          // 0xxxxxxx
+          out += String.fromCharCode(c);
+          break;
+          case 12: case 13:
+          // 110x xxxx   10xx xxxx
+          char2 = array[i++];
+          out += String.fromCharCode(((c & 0x1F) << 6) | (char2 & 0x3F));
+          break;
+          case 14:
+          // 1110 xxxx  10xx xxxx  10xx xxxx
+          char2 = array[i++];
+          char3 = array[i++];
+          out += String.fromCharCode(((c & 0x0F) << 12) |
+          ((char2 & 0x3F) << 6) |
+          ((char3 & 0x3F) << 0));
+          break;
+        }
+      }    
+      return out;
+    }
+    function isDataView(obj) {
+      return obj && DataView.prototype.isPrototypeOf(obj)
+    }
+    function bufferClone(buf) {
+      var view = new Array(buf.byteLength)
+      var array = new Uint8Array(buf)
+      var i = view.length
+      while(i--) {
+        view[i] = array[i]
+      }
+      return view
+    }
+    function encodeByteArray(input) {
+      var byteToCharMap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+
+      var output = [];
+
+      for (var i = 0; i < input.length; i += 3) {
+        var byte1 = input[i];
+        var haveByte2 = i + 1 < input.length;
+        var byte2 = haveByte2 ? input[i + 1] : 0;
+        var haveByte3 = i + 2 < input.length;
+        var byte3 = haveByte3 ? input[i + 2] : 0;
+
+        var outByte1 = byte1 >> 2;
+        var outByte2 = ((byte1 & 0x03) << 4) | (byte2 >> 4);
+        var outByte3 = ((byte2 & 0x0F) << 2) | (byte3 >> 6);
+        var outByte4 = byte3 & 0x3F;
+
+        if (!haveByte3) {
+          outByte4 = 64;
+
+          if (!haveByte2) {
+            outByte3 = 64;
+          }
+        }
+
+        output.push(
+            byteToCharMap[outByte1], byteToCharMap[outByte2],
+            byteToCharMap[outByte3], byteToCharMap[outByte4])
+      }
+
+      return output.join('')
+    }
+
+    var create = Object.create || function (a) {
+      function c() {}
+      c.prototype = a;
+      return new c
+    }
+    
+    if (arrayBufferSupported) {
+      var viewClasses = [
+        '[object Int8Array]',
+        '[object Uint8Array]',
+        '[object Uint8ClampedArray]',
+        '[object Int16Array]',
+        '[object Uint16Array]',
+        '[object Int32Array]',
+        '[object Uint32Array]',
+        '[object Float32Array]',
+        '[object Float64Array]'
+      ]
+
+      var isArrayBufferView = ArrayBuffer.isView || function(obj) {
+        return obj && viewClasses.indexOf(Object.prototype.toString.call(obj)) > -1
+      }
+    }
+
+    
+    
+    /********************************************************/
+    /*                   Blob constructor                   */
+    /********************************************************/
+    function Blob(chunks, opts) {
+      chunks = chunks || []
+      for (var i = 0, len = chunks.length; i < len; i++) {
+        var chunk = chunks[i]
+        if (chunk instanceof Blob) {
+          chunks[i] = chunk._buffer
+        } else if (typeof chunk === 'string') {
+          chunks[i] = toUTF8Array(chunk)
+        } else if (arrayBufferSupported && (ArrayBuffer.prototype.isPrototypeOf(chunk) || isArrayBufferView(chunk))) {
+          chunks[i] = bufferClone(chunk)
+        } else if (arrayBufferSupported && isDataView(chunk)) {
+          chunks[i] = bufferClone(chunk.buffer)
+        } else {
+          chunks[i] = toUTF8Array(String(chunk))
+        }
+      }
+
+      this._buffer = [].concat.apply([], chunks)
+      this.size = this._buffer.length
+      this.type = opts ? opts.type || '' : ''
+    }
+
+    Blob.prototype.slice = function(start, end, type) {
+      var slice = this._buffer.slice(start || 0, end || this._buffer.length)
+      return new Blob([slice], {type: type})
+    }
+
+    Blob.prototype.toString = function() {
+      return '[object Blob]'
+    }
+
+    
+
+    /********************************************************/
+    /*                   File constructor                   */
+    /********************************************************/
+    function File(chunks, name, opts) {
+      opts = opts || {}
+      a = Blob.call(this, chunks, opts) || this
+      a.name = name
+      a.lastModifiedDate = opts.lastModified ? new Date(opts.lastModified) : new Date
+      a.lastModified = +a.lastModifiedDate
+      
+      return a
+    }
+
+    File.prototype = create(Blob.prototype);
+    File.prototype.constructor = File;
+
+    if (Object.setPrototypeOf) 
+      Object.setPrototypeOf(File, Blob);
+    else {
+      try {File.__proto__ = Blob} catch (e) {}
+    }
+
+    File.prototype.toString = function() {
+      return '[object File]'
+    }
+
+    
+    /********************************************************/
+    /*                FileReader constructor                */
+    /********************************************************/
+    function FileReader() {
+    	if (!(this instanceof FileReader))
+    		throw new TypeError("Failed to construct 'FileReader': Please use the 'new' operator, this DOM object constructor cannot be called as a function.")
+
+    	var delegate = document.createDocumentFragment()
+    	this.addEventListener = delegate.addEventListener
+    	this.dispatchEvent = function(evt) {
+    		var local = this['on' + evt.type]
+    		if (typeof local === 'function') local(evt)
+    		delegate.dispatchEvent(evt)
+    	}
+    	this.removeEventListener = delegate.removeEventListener
+    }
+
+    function _read(fr, blob, kind) {
+    	if (!(blob instanceof Blob))
+    		throw new TypeError("Failed to execute '" + type + "' on 'FileReader': parameter 1 is not of type 'Blob'.")
+    	
+    	fr.result = ''
+
+    	setTimeout(function(){
+    		this.readyState = FileReader.LOADING
+    		fr.dispatchEvent(new Event('load'))
+    		fr.dispatchEvent(new Event('loadend'))
+    	})
+    }
+
+    FileReader.EMPTY = 0
+    FileReader.LOADING = 1
+    FileReader.DONE = 2
+    FileReader.prototype.error = null
+    FileReader.prototype.onabort = null
+    FileReader.prototype.onerror = null
+    FileReader.prototype.onload = null
+    FileReader.prototype.onloadend = null
+    FileReader.prototype.onloadstart = null
+    FileReader.prototype.onprogress = null
+
+    FileReader.prototype.readAsDataURL = function(blob) {
+    	_read(this, blob, 'readAsDataURL')
+    	this.result = 'data:' + blob.type + ';base64,' + encodeByteArray(blob._buffer)
+    }
+
+    FileReader.prototype.readAsText = function(blob) {
+    	_read(this, blob, 'readAsText')
+    	this.result = fromUtf8Array(blob._buffer)
+    }
+
+    FileReader.prototype.readAsArrayBuffer = function(blob) {
+    	_read(this, blob, 'readAsText')
+    	this.result = blob._buffer.slice()
+    }
+
+    FileReader.prototype.abort = function() {}
+
+    
+    /********************************************************/
+    /*                         URL                          */
+    /********************************************************/
+    URL.createObjectURL = function(blob) {
+      return blob instanceof Blob 
+        ? 'data:' + blob.type + ';base64,' + encodeByteArray(blob._buffer)
+        : createObjectURL.call(URL, blob)
+    }
+    
+    URL.revokeObjectURL = function(url) {
+      revokeObjectURL && revokeObjectURL.call(URL, url)
+    }
+
+    /********************************************************/
+    /*                         XHR                          */
+    /********************************************************/
+    var _send = global.XMLHttpRequest && global.XMLHttpRequest.prototype.send
+    if (_send) {
+      XMLHttpRequest.prototype.send = function(data) {
+        if (data instanceof Blob) {
+          this.setRequestHeader('Content-Type', data.type)
+          _send.call(this, fromUtf8Array(data._buffer))
+        } else {
+          _send.call(this, data)
+        }
+      }
+    }
+    
+    global.FileReader = FileReader
+    global.File = File
+    global.Blob = Blob
+  }
+
+  if (strTag) {
+    File.prototype[strTag] = 'File'
+    Blob.prototype[strTag] = 'Blob'
+    FileReader.prototype[strTag] = 'FileReader'
+  }
+
+  function fixFileAndXHR() {
+    var isIE = !!global.ActiveXObject || (
+      '-ms-scroll-limit' in document.documentElement.style && 
+      '-ms-ime-align' in document.documentElement.style
+    )
+
+    // Monkey patched 
+    // IE don't set Content-Type header on XHR whose body is a typed Blob
+    // https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/6047383
+    var _send = global.XMLHttpRequest && global.XMLHttpRequest.prototype.send
+    if (isIE && _send) {
+      XMLHttpRequest.prototype.send = function(data) {
+        if (data instanceof Blob) {
+          this.setRequestHeader('Content-Type', data.type)
+          _send.call(this, data)
+        } else {
+          _send.call(this, data)
+        }
+      }
+    }
+
+    try {
+      new File([], '')
+    } catch(e) {
+      try {
+        var klass = new Function('class File extends Blob {' + 
+          'constructor(chunks, name, opts) {' +
+            'opts = opts || {};' +
+            'super(chunks, opts || {});' +
+            'this.name = name;' +
+            'this.lastModifiedDate = opts.lastModified ? new Date(opts.lastModified) : new Date;' +
+            'this.lastModified = +this.lastModifiedDate;' +
+          '}};' +
+          'return new File([], ""), File'
+        )()
+        global.File = klass
+      } catch(e) {
+        var klass = function(b, d, c) {
+          var blob = new Blob(b, c)
+          var t = c && void 0 !== c.lastModified ? new Date(c.lastModified) : new Date
+          
+          blob.name = d
+          blob.lastModifiedDate = t
+          blob.lastModified = +t
+          blob.toString = function() {
+            return '[object File]'
+          }
+          
+          if (stringTag)
+            blob[stringTag] = 'File'
+          
+          return blob
+        }
+        global.File = klass
+      }
+    }
+  }
+
+  if (blobSupported) {
+    fixFileAndXHR()
+    global.Blob = blobSupportsArrayBufferView ? global.Blob : BlobConstructor
+  } else if (blobBuilderSupported) {
+    fixFileAndXHR()
+    global.Blob = BlobBuilderConstructor;
+  } else {
+    FakeBlobBuilder()
+  }
+
+})();
