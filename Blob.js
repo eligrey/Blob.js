@@ -21,7 +21,7 @@
 
   global.URL = global.URL || global.webkitURL || function(href, a) {
   	a = document.createElement('a')
-  	a.href = uri
+  	a.href = href
   	return a
   }
 
@@ -265,7 +265,7 @@
     /********************************************************/
     function File(chunks, name, opts) {
       opts = opts || {}
-      a = Blob.call(this, chunks, opts) || this
+      var a = Blob.call(this, chunks, opts) || this
       a.name = name
       a.lastModifiedDate = opts.lastModified ? new Date(opts.lastModified) : new Date
       a.lastModified = +a.lastModifiedDate
@@ -306,7 +306,7 @@
 
     function _read(fr, blob, kind) {
     	if (!(blob instanceof Blob))
-    		throw new TypeError("Failed to execute '" + type + "' on 'FileReader': parameter 1 is not of type 'Blob'.")
+    		throw new TypeError("Failed to execute '" + kind + "' on 'FileReader': parameter 1 is not of type 'Blob'.")
     	
     	fr.result = ''
 
@@ -433,8 +433,8 @@
             return '[object File]'
           }
           
-          if (stringTag)
-            blob[stringTag] = 'File'
+          if (strTag)
+            blob[strTag] = 'File'
           
           return blob
         }
