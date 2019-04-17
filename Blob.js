@@ -546,4 +546,107 @@
   } else {
     FakeBlobBuilder()
   }
+
+  var blob = global.Blob.prototype
+  var stream
+
+  function promisify(obj) {
+    return new Promise(function(resolve, reject) {
+      obj.onload =
+      obj.onerror = function(evt) {
+        obj.onload =
+        obj.onerror = null
+
+        evt.type === 'load'
+          ? resolve(obj.result || obj)
+          : reject(new Error('Failed to read the blob/file'))
+      }
+    })
+  }
+
+
+  try {
+    new ReadableStream({ type: 'bytes' })
+    stream = function stream() {
+      var position = 0
+      var blob = this
+
+      return new ReadableStream({
+        type: 'bytes',
+        autoAllocateChunkSize: 524288,
+
+        pull: function (controller) {
+          var v = controller.byobRequest.view
+          var chunk = blob.slice(position, position + v.byteLength)
+          return chunk.arrayBuffer()
+          .then(function (buffer) {
+            var uint8array = new Uint8Array(buffer)
+            var bytesRead = uint8array.byteLength
+
+            position += bytesRead
+            v.set(uint8array)
+              controller.byobRequest.respond(bytesRead)
+
+            if(position >= blob.size)
+              controller.close()
+          })
+        }
+      })
+    }
+  } catch (e) {
+    try {
+      new ReadableStream({})
+      stream = function stream(blob){
+        var position = 0
+        var blob = this
+
+        return new ReadableStream({
+          pull: function (controller) {
+            var chunk = blob.slice(position, position + 524288)
+
+            return chunk.arrayBuffer().then(function (buffer) {
+              position += buffer.byteLength
+              var uint8array = new Uint8Array(buffer)
+              controller.enqueue(uint8array)
+
+              if (position == blob.size)
+                controller.close()
+            })
+          }
+        })
+      }
+    } catch (e) {
+      try {
+        new Response('').body.getReader().read()
+        stream = function stream() {
+          return (new Response(this)).body
+        }
+      } catch (e) {
+        stream = function stream() {
+          throw new Error('Include https://github.com/MattiasBuelens/web-streams-polyfill')
+        }
+      }
+    }
+  }
+
+
+  if (!blob.arrayBuffer) {
+    blob.arrayBuffer = function arrayBuffer() {
+      var fr = new FileReader()
+      fr.readAsArrayBuffer(this)
+      return promisify(fr)
+    }
+  }
+
+  if (!blob.text) {
+    blob.text = function text() {
+      var fr = new FileReader()
+      fr.readAsText(this)
+      return promisify(fr)
+    }
+  }
+
+  if (!blob.stream) {
+    blob.stream = stream
+  }
 })()
