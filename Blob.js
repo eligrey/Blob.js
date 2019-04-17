@@ -89,67 +89,166 @@
     BlobConstructor.prototype = Blob.prototype
   }
 
-  function FakeBlobBuilder () {
-    function toUTF8Array (str) {
-      var utf8 = []
-      for (var i = 0; i < str.length; i++) {
-        var charcode = str.charCodeAt(i)
-        if (charcode < 0x80) utf8.push(charcode)
-        else if (charcode < 0x800) {
-          utf8.push(0xc0 | (charcode >> 6),
-          0x80 | (charcode & 0x3f))
-        } else if (charcode < 0xd800 || charcode >= 0xe000) {
-          utf8.push(0xe0 | (charcode >> 12),
-          0x80 | ((charcode >> 6) & 0x3f),
-          0x80 | (charcode & 0x3f))
-        }
-        // surrogate pair
-        else {
-          i++
-          // UTF-16 encodes 0x10000-0x10FFFF by
-          // subtracting 0x10000 and splitting the
-          // 20 bits of 0x0-0xFFFFF into two halves
-          charcode = 0x10000 + (((charcode & 0x3ff) << 10)
-          | (str.charCodeAt(i) & 0x3ff))
-          utf8.push(0xf0 | (charcode >> 18),
-          0x80 | ((charcode >> 12) & 0x3f),
-          0x80 | ((charcode >> 6) & 0x3f),
-          0x80 | (charcode & 0x3f))
-        }
-      }
-      return utf8
-    }
-    function fromUtf8Array (array) {
-      var out, i, len, c
-      var char2, char3
 
-      out = ''
-      len = array.length
-      i = 0
-      while (i < len) {
-        c = array[i++]
-        switch (c >> 4) {
-          case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
-          // 0xxxxxxx
-            out += String.fromCharCode(c)
-            break
-          case 12: case 13:
-          // 110x xxxx   10xx xxxx
-            char2 = array[i++]
-            out += String.fromCharCode(((c & 0x1F) << 6) | (char2 & 0x3F))
-            break
-          case 14:
-          // 1110 xxxx  10xx xxxx  10xx xxxx
-            char2 = array[i++]
-            char3 = array[i++]
-            out += String.fromCharCode(((c & 0x0F) << 12) |
-          ((char2 & 0x3F) << 6) |
-          ((char3 & 0x3F) << 0))
-            break
+
+  /********************************************************/
+  /*               String Encoder fallback                */
+  /********************************************************/
+  function stringEncode (string) {
+    var pos = 0
+    var len = string.length
+    var out = []
+    var Arr = global.Uint8Array || Array // Use byte array when possible
+
+    var at = 0  // output position
+    var tlen = Math.max(32, len + (len >> 1) + 7)  // 1.5x size
+    var target = new Arr((tlen >> 3) << 3)  // ... but at 8 byte offset
+
+    while (pos < len) {
+      var value = string.charCodeAt(pos++)
+      if (value >= 0xd800 && value <= 0xdbff) {
+        // high surrogate
+        if (pos < len) {
+          var extra = string.charCodeAt(pos)
+          if ((extra & 0xfc00) === 0xdc00) {
+            ++pos
+            value = ((value & 0x3ff) << 10) + (extra & 0x3ff) + 0x10000
+          }
+        }
+        if (value >= 0xd800 && value <= 0xdbff) {
+          continue  // drop lone surrogate
         }
       }
-      return out
+
+      // expand the buffer if we couldn't write 4 bytes
+      if (at + 4 > target.length) {
+        tlen += 8  // minimum extra
+        tlen *= (1.0 + (pos / string.length) * 2)  // take 2x the remaining
+        tlen = (tlen >> 3) << 3  // 8 byte offset
+
+        const update = new Uint8Array(tlen)
+        update.set(target)
+        target = update
+      }
+
+      if ((value & 0xffffff80) === 0) {  // 1-byte
+        target[at++] = value  // ASCII
+        continue
+      } else if ((value & 0xfffff800) === 0) {  // 2-byte
+        target[at++] = ((value >> 6) & 0x1f) | 0xc0
+      } else if ((value & 0xffff0000) === 0) {  // 3-byte
+        target[at++] = ((value >> 12) & 0x0f) | 0xe0
+        target[at++] = ((value >> 6) & 0x3f) | 0x80
+      } else if ((value & 0xffe00000) === 0) {  // 4-byte
+        target[at++] = ((value >> 18) & 0x07) | 0xf0
+        target[at++] = ((value >> 12) & 0x3f) | 0x80
+        target[at++] = ((value >> 6) & 0x3f) | 0x80
+      } else {
+        // FIXME: do we care
+        continue
+      }
+
+      target[at++] = (value & 0x3f) | 0x80
     }
+
+    return target.slice(0, at)
+  }
+
+  /********************************************************/
+  /*               String Decoder fallback                */
+  /********************************************************/
+  function stringDecode (buf) {
+    var end = buf.length
+    var res = []
+
+    var i = 0
+    while (i < end) {
+      var firstByte = buf[i]
+      var codePoint = null
+      var bytesPerSequence = (firstByte > 0xEF) ? 4
+        : (firstByte > 0xDF) ? 3
+          : (firstByte > 0xBF) ? 2
+            : 1
+
+      if (i + bytesPerSequence <= end) {
+        var secondByte, thirdByte, fourthByte, tempCodePoint
+
+        switch (bytesPerSequence) {
+          case 1:
+            if (firstByte < 0x80) {
+              codePoint = firstByte
+            }
+            break
+          case 2:
+            secondByte = buf[i + 1]
+            if ((secondByte & 0xC0) === 0x80) {
+              tempCodePoint = (firstByte & 0x1F) << 0x6 | (secondByte & 0x3F)
+              if (tempCodePoint > 0x7F) {
+                codePoint = tempCodePoint
+              }
+            }
+            break
+          case 3:
+            secondByte = buf[i + 1]
+            thirdByte = buf[i + 2]
+            if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
+              tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | (thirdByte & 0x3F)
+              if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
+                codePoint = tempCodePoint
+              }
+            }
+            break
+          case 4:
+            secondByte = buf[i + 1]
+            thirdByte = buf[i + 2]
+            fourthByte = buf[i + 3]
+            if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
+              tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | (fourthByte & 0x3F)
+              if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
+                codePoint = tempCodePoint
+              }
+            }
+        }
+      }
+
+      if (codePoint === null) {
+        // we did not generate a valid codePoint so insert a
+        // replacement char (U+FFFD) and advance only 1 byte
+        codePoint = 0xFFFD
+        bytesPerSequence = 1
+      } else if (codePoint > 0xFFFF) {
+        // encode to utf16 (surrogate pair dance)
+        codePoint -= 0x10000
+        res.push(codePoint >>> 10 & 0x3FF | 0xD800)
+        codePoint = 0xDC00 | codePoint & 0x3FF
+      }
+
+      res.push(codePoint)
+      i += bytesPerSequence
+    }
+
+    var len = res.length
+    var str = ''
+    var i = 0
+
+    while (i < len) {
+      str += String.fromCharCode.apply(String, res.slice(i, i += 0x1000))
+    }
+
+    return str
+  }
+
+  // string -> buffer
+  var textEncode = typeof TextEncoder === 'object'
+    ? TextEncoder.prototype.encode.bind(new TextEncoder())
+    : stringEncode
+
+  // buffer -> string
+  var textDecode = typeof TextDecoder === 'object'
+    ? TextDecoder.prototype.decode.bind(new TextDecoder())
+    : stringDecode
+
+  function FakeBlobBuilder () {
     function isDataView (obj) {
       return obj && DataView.prototype.isPrototypeOf(obj)
     }
@@ -162,7 +261,7 @@
       }
       return view
     }
-    function encodeByteArray (input) {
+    function array2base64 (input) {
       var byteToCharMap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
 
       var output = []
@@ -188,8 +287,9 @@
         }
 
         output.push(
-            byteToCharMap[outByte1], byteToCharMap[outByte2],
-            byteToCharMap[outByte3], byteToCharMap[outByte4])
+          byteToCharMap[outByte1], byteToCharMap[outByte2],
+          byteToCharMap[outByte3], byteToCharMap[outByte4]
+        )
       }
 
       return output.join('')
@@ -229,13 +329,13 @@
         if (chunk instanceof Blob) {
           chunks[i] = chunk._buffer
         } else if (typeof chunk === 'string') {
-          chunks[i] = toUTF8Array(chunk)
+          chunks[i] = textEncode(chunk)
         } else if (arrayBufferSupported && (ArrayBuffer.prototype.isPrototypeOf(chunk) || isArrayBufferView(chunk))) {
           chunks[i] = bufferClone(chunk)
         } else if (arrayBufferSupported && isDataView(chunk)) {
           chunks[i] = bufferClone(chunk.buffer)
         } else {
-          chunks[i] = toUTF8Array(String(chunk))
+          chunks[i] = textEncode(String(chunk))
         }
       }
 
@@ -283,9 +383,9 @@
     /*                FileReader constructor                */
     /********************************************************/
     function FileReader () {
-    	if (!(this instanceof FileReader))    		{
-      throw new TypeError("Failed to construct 'FileReader': Please use the 'new' operator, this DOM object constructor cannot be called as a function.")
-    }
+    	if (!(this instanceof FileReader)) {
+        throw new TypeError("Failed to construct 'FileReader': Please use the 'new' operator, this DOM object constructor cannot be called as a function.")
+      }
 
     	var delegate = document.createDocumentFragment()
     	this.addEventListener = delegate.addEventListener
@@ -298,9 +398,9 @@
     }
 
     function _read (fr, blob, kind) {
-    	if (!(blob instanceof Blob))    		{
-      throw new TypeError("Failed to execute '" + kind + "' on 'FileReader': parameter 1 is not of type 'Blob'.")
-    }
+    	if (!(blob instanceof Blob)) {
+        throw new TypeError("Failed to execute '" + kind + "' on 'FileReader': parameter 1 is not of type 'Blob'.")
+      }
 
     	fr.result = ''
 
@@ -324,12 +424,12 @@
 
     FileReader.prototype.readAsDataURL = function (blob) {
     	_read(this, blob, 'readAsDataURL')
-    	this.result = 'data:' + blob.type + ';base64,' + encodeByteArray(blob._buffer)
+    	this.result = 'data:' + blob.type + ';base64,' + array2base64(blob._buffer)
     }
 
     FileReader.prototype.readAsText = function (blob) {
     	_read(this, blob, 'readAsText')
-    	this.result = fromUtf8Array(blob._buffer)
+    	this.result = textDecode(blob._buffer)
     }
 
     FileReader.prototype.readAsArrayBuffer = function (blob) {
@@ -344,7 +444,7 @@
     /********************************************************/
     URL.createObjectURL = function (blob) {
       return blob instanceof Blob
-        ? 'data:' + blob.type + ';base64,' + encodeByteArray(blob._buffer)
+        ? 'data:' + blob.type + ';base64,' + array2base64(blob._buffer)
         : createObjectURL.call(URL, blob)
     }
 
@@ -360,7 +460,7 @@
       XMLHttpRequest.prototype.send = function (data) {
         if (data instanceof Blob) {
           this.setRequestHeader('Content-Type', data.type)
-          _send.call(this, fromUtf8Array(data._buffer))
+          _send.call(this, textDecode(data._buffer))
         } else {
           _send.call(this, data)
         }
