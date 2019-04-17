@@ -239,12 +239,12 @@
   }
 
   // string -> buffer
-  var textEncode = typeof TextEncoder === 'object'
+  var textEncode = typeof TextEncoder === 'function'
     ? TextEncoder.prototype.encode.bind(new TextEncoder())
     : stringEncode
 
   // buffer -> string
-  var textDecode = typeof TextDecoder === 'object'
+  var textDecode = typeof TextDecoder === 'function'
     ? TextDecoder.prototype.decode.bind(new TextDecoder())
     : stringDecode
 
