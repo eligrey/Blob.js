@@ -472,12 +472,6 @@
     global.Blob = Blob
   }
 
-  if (strTag) {
-    File.prototype[strTag] = 'File'
-    Blob.prototype[strTag] = 'Blob'
-    FileReader.prototype[strTag] = 'FileReader'
-  }
-
   function fixFileAndXHR () {
     var isIE = !!global.ActiveXObject || (
       '-ms-scroll-limit' in document.documentElement.style &&
@@ -545,6 +539,12 @@
     global.Blob = BlobBuilderConstructor
   } else {
     FakeBlobBuilder()
+  }
+
+  if (strTag) {
+    File.prototype[strTag] = 'File'
+    Blob.prototype[strTag] = 'Blob'
+    FileReader.prototype[strTag] = 'FileReader'
   }
 
   var blob = global.Blob.prototype
