@@ -319,6 +319,21 @@
       }
     }
 
+    function concatTypedarrays (chunks) {
+      var size = 0
+      var i = chunks.length
+      while (i--) { size += chunks[i].length }
+      var b = new Uint8Array(size)
+      var offset = 0
+      for (i = 0, l = chunks.length; i < l; i++) {
+        var chunk = chunks[i]
+        b.set(chunk, offset)
+        offset += chunk.byteLength || chunk.length
+      }
+
+      return b
+    }
+
     /********************************************************/
     /*                   Blob constructor                   */
     /********************************************************/
@@ -339,7 +354,9 @@
         }
       }
 
-      this._buffer = [].concat.apply([], chunks)
+      this._buffer = global.Uint8Array
+        ? concatTypedarrays(chunks)
+        : [].concat.apply([], chunks)
       this.size = this._buffer.length
       this.type = opts ? opts.type || '' : ''
     }
