@@ -465,8 +465,9 @@
     }
 
     FileReader.prototype.readAsArrayBuffer = function (blob) {
-    	_read(this, blob, 'readAsText')
-    	this.result = blob._buffer.slice()
+      _read(this, blob, 'readAsText')
+       // return ArrayBuffer when possible
+      this.result = (blob._buffer.buffer || blob._buffer).slice()
     }
 
     FileReader.prototype.abort = function () {}
