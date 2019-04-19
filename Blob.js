@@ -1,6 +1,6 @@
 /* Blob.js
  * A Blob, File, FileReader & URL implementation.
- * 2018-08-09
+ * 2019-04-19
  *
  * By Eli Grey, http://eligrey.com
  * By Jimmy Wärting, https://github.com/jimmywarting
