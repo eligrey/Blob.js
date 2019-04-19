@@ -358,7 +358,14 @@
         ? concatTypedarrays(chunks)
         : [].concat.apply([], chunks)
       this.size = this._buffer.length
-      this.type = opts ? opts.type || '' : ''
+
+      this.type = opts.type || ''
+      if (/[^\u0020-\u007E]/.test(this.type)) {
+        this.type = ''
+      } else {
+        this.type = this.type.toLowerCase()
+      }
+
     }
 
     Blob.prototype.slice = function (start, end, type) {
