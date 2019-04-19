@@ -366,7 +366,14 @@
       } else {
         this.type = this.type.toLowerCase()
       }
+    }
 
+    Blob.prototype.arrayBuffer = function () {
+      return Promise.resolve(this._buffer)
+    }
+
+    Blob.prototype.text = function () {
+      return Promise.resolve(textDecode(this._buffer))
     }
 
     Blob.prototype.slice = function (start, end, type) {
