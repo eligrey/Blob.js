@@ -339,6 +339,7 @@
     /********************************************************/
     function Blob (chunks, opts) {
       chunks = chunks || []
+      opts = opts == null ? {} : opts
       for (var i = 0, len = chunks.length; i < len; i++) {
         var chunk = chunks[i]
         if (chunk instanceof Blob) {
@@ -383,7 +384,7 @@
     function File (chunks, name, opts) {
       opts = opts || {}
       var a = Blob.call(this, chunks, opts) || this
-      a.name = name
+      a.name = name.replace(/\//g, ':')
       a.lastModifiedDate = opts.lastModified ? new Date(opts.lastModified) : new Date()
       a.lastModified = +a.lastModifiedDate
 
@@ -525,7 +526,7 @@
           'constructor(chunks, name, opts) {' +
             'opts = opts || {};' +
             'super(chunks, opts || {});' +
-            'this.name = name;' +
+            'this.name = name.replace(/\//g, ":");' +
             'this.lastModifiedDate = opts.lastModified ? new Date(opts.lastModified) : new Date();' +
             'this.lastModified = +this.lastModifiedDate;' +
           '}};' +
@@ -537,7 +538,7 @@
           var blob = new Blob(b, c)
           var t = c && void 0 !== c.lastModified ? new Date(c.lastModified) : new Date()
 
-          blob.name = d
+          blob.name = d.replace(/\//g, ':')
           blob.lastModifiedDate = t
           blob.lastModified = +t
           blob.toString = function () {
