@@ -1,0 +1,7 @@
+{
+  "name": "Blob.js",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:eligrey/Blob.js.git",
+  "license": "MIT"
+}
