@@ -490,9 +490,16 @@
     /********************************************************/
     var _send = global.XMLHttpRequest && global.XMLHttpRequest.prototype.send
     if (_send) {
+      var _setRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
+
+      XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
+        if (name.toLowerCase() === 'content-type') this._hasContentType = true;
+        _setRequestHeader.call(this, name, value);
+      }
+
       XMLHttpRequest.prototype.send = function (data) {
         if (data instanceof Blob) {
-          this.setRequestHeader('Content-Type', data.type)
+          if (!this._hasContentType) this.setRequestHeader('Content-Type', data.type)
           _send.call(this, textDecode(data._buffer))
         } else {
           _send.call(this, data)
@@ -516,9 +523,16 @@
     // https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/6047383
     var _send = global.XMLHttpRequest && global.XMLHttpRequest.prototype.send
     if (isIE && _send) {
+      var _setRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
+
+      XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
+        if (name.toLowerCase() === 'content-type') this._hasContentType = true;
+        _setRequestHeader.call(this, name, value);
+      }
+
       XMLHttpRequest.prototype.send = function (data) {
         if (data instanceof Blob) {
-          this.setRequestHeader('Content-Type', data.type)
+          if (!this._hasContentType) this.setRequestHeader('Content-Type', data.type)
           _send.call(this, data)
         } else {
           _send.call(this, data)
