@@ -97,7 +97,6 @@
   function stringEncode (string) {
     var pos = 0
     var len = string.length
-    var out = []
     var Arr = global.Uint8Array || Array // Use byte array when possible
 
     var at = 0  // output position
@@ -126,7 +125,7 @@
         tlen *= (1.0 + (pos / string.length) * 2)  // take 2x the remaining
         tlen = (tlen >> 3) << 3  // 8 byte offset
 
-        const update = new Uint8Array(tlen)
+        var update = new Uint8Array(tlen)
         update.set(target)
         target = update
       }
