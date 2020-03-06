@@ -1,6 +1,6 @@
 /* Blob.js
  * A Blob, File, FileReader & URL implementation.
- * 2019-04-19
+ * 2019-05-01
  *
  * By Eli Grey, http://eligrey.com
  * By Jimmy Wärting, https://github.com/jimmywarting
@@ -37,7 +37,7 @@
 
   try {
     // Check if Blob constructor is supported
-    blobSupported = new Blob(['ä']).size === 2
+    blobSupported = new Blob(['\u00e4']).size === 2
 
     // Check if Blob constructor supports ArrayBufferViews
     // Fails in Safari 6, so we need to map to ArrayBuffers there.
