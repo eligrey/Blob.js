@@ -1,0 +1,19 @@
+{
+  "name": "blob",
+  "main": "Blob.js",
+  "version": "1.0.0",
+  "homepage": "https://github.com/eligrey/Blob.js",
+  "authors": [
+    "Eli Grey <me@eligrey.com>"
+  ],
+  "description": "Implements the W3C Blob interface in browsers that do not natively support it",
+  "keywords": [
+    "blob"
+  ],
+  "license": "MIT",
+  "ignore": [
+      "*",
+      "!Blob.*js",
+      "!LICENSE.md"
+  ]
+}
