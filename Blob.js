@@ -339,24 +339,25 @@
     function Blob (chunks, opts) {
       chunks = chunks || []
       opts = opts == null ? {} : opts
+      const newChunks = new Array(chunks.length)
       for (var i = 0, len = chunks.length; i < len; i++) {
         var chunk = chunks[i]
         if (chunk instanceof Blob) {
-          chunks[i] = chunk._buffer
+          newChunks[i] = chunk._buffer
         } else if (typeof chunk === 'string') {
-          chunks[i] = textEncode(chunk)
+          newChunks[i] = textEncode(chunk)
         } else if (arrayBufferSupported && (ArrayBuffer.prototype.isPrototypeOf(chunk) || isArrayBufferView(chunk))) {
-          chunks[i] = bufferClone(chunk)
+          newChunks[i] = bufferClone(chunk)
         } else if (arrayBufferSupported && isDataView(chunk)) {
-          chunks[i] = bufferClone(chunk.buffer)
+          newChunks[i] = bufferClone(chunk.buffer)
         } else {
-          chunks[i] = textEncode(String(chunk))
+          newChunks[i] = textEncode(String(chunk))
         }
       }
 
       this._buffer = global.Uint8Array
-        ? concatTypedarrays(chunks)
-        : [].concat.apply([], chunks)
+        ? concatTypedarrays(newChunks)
+        : [].concat.apply([], newChunks)
       this.size = this._buffer.length
 
       this.type = opts.type || ''
