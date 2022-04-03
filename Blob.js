@@ -313,7 +313,7 @@
         '[object Float64Array]'
       ]
 
-      var isArrayBufferView = ArrayBuffer.isView || function (obj) {
+      var isArrayBufferView = function (obj) {
         return obj && viewClasses.indexOf(Object.prototype.toString.call(obj)) > -1
       }
     }
