@@ -313,7 +313,7 @@
         '[object Float64Array]'
       ]
 
-      var isArrayBufferView = ArrayBuffer.isView || function (obj) {
+      var isArrayBufferView = function (obj) {
         return obj && viewClasses.indexOf(Object.prototype.toString.call(obj)) > -1
       }
     }
@@ -337,7 +337,7 @@
     /*                   Blob constructor                   */
     /********************************************************/
     function Blob (chunks, opts) {
-      chunks = chunks || []
+      chunks = chunks.slice() || []
       opts = opts == null ? {} : opts
       for (var i = 0, len = chunks.length; i < len; i++) {
         var chunk = chunks[i]
